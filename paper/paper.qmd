@@ -1,6 +1,6 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
+title: "Analysising social factors influence Canadian voters' choices"
+subtitle: "Decoding CES 2021 Vote Data by using A Multilevel Logistic Regression Model"
 author: 
   - Yichen ji
 thanks: "Code and data are available at: https://github.com/Selinayichenji/Canadian_election_prediction.git."
@@ -8,29 +8,33 @@ date: today
 date-format: long
 abstract: "1) what was done, 2) what was found, and 3) why this matters (all at a high level). ."
 format: pdf
+toc: true
 number-sections: true
 bibliography: references.bib
+link-citations: true
 ---
 
 ```{r setup}
 #| include: false
 #| warning: false
 #| message: false
-
 library(tidyverse)
+
+library(here)
+library(dplyr)
 library(arrow)
-```
-
-```{r}
-#| label: cleaned
-#| warning: false
-#| message: false
-#| results: 'hide'
-#| echo: false
-
-analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
+library(ggplot2)
+library(kableExtra)
+library(bayesplot)
+library(rstanarm)
 
 ```
+
+```{r include=FALSE, message=FALSE}
+# read the data file and store it in the 'data' variable
+analysis_data <- read_parquet(here("data", "analysis_data", "analysis_data.parquet"))
+```
+
 
 # Introduction
 
@@ -42,12 +46,16 @@ The importance of this study is to reveal the complexities behind the recent dec
 
 ## estimand
 
+
+
+
+
  The paper introduces the basic information contains data source, methodology, variables and measurements in @sec-data. The visualization and analysis of the tendency differences in moderation by people across three social factors are presented in @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-app is for appendix and @sec-ref is listed all references in this paper.
 
 
 # Data {#sec-data}
 
-The survey data was sourced from the "2021 Canadian Election Study" (Stephenson, Harell, Rubenson, & Loewen, 2022), and the census information was obtained from the "General Social Survey, Cycle 31: Families, Public Use Microdata File Documentation and User’s Guide" (Statistics Canada, 2019). 
+The survey data was sourced from the "2021 Canadian Election Study" (Stephenson, Harell, Rubenson, & Loewen, 2022).
 
 
 ## Analysis Tools
@@ -73,20 +81,87 @@ Our paper applies using the statistical programming language R [@citeR]. Besides
 
 >**children_number**: the number of children within the family, which includes only six levels (0,1,2,3,4 and 4+ children)
 
+\newpage
 ## Sample of cleaned data
 
+```{r}
+#| label: tbl-cleaned
+#| tbl-cap: Sample of the Cleaned Data
+#| warning: false
+#| echo: false
 
+head(analysis_data, 5) |>
+  kable(
+    col.names = c("age", "vote_liberal", "vote_conservative", "vote_NDP","gender","education_level","family_income","province","children_number"),
+    booktabs = TRUE
+  )
 
-## Measurement
-The CES 2021, consisting of an online cohort of 20,968 participants from the broader Canadian populace, was facilitated via the Leger Opinion panel. This study was structured in two distinct stages: the campaign period survey (CPS) and the post-election survey (PES). The CPS phase was further divided into three segments – "CPS", "CPS Modules", and "CPS Oversample", which were later consolidated into one dataset. Regarding the PES, all individuals who participated in the CPS were invited back for this subsequent survey after the election. Out of these, 15,069 individuals completed the PES, marking a response rate of 72%.
+```
 
 ## Survey data summary
 
-distribution of age, gender, income, education level, province, children number
+All detailed tables include summary data of 6 variables are in @sec-A
+age, gender, income, education level, province, children number
+
+```{r}
+#| label: fig-pro
+#| fig-cap:  Population Distribution by Province in CES2021
+#| warning: false
+#| echo: false
+
+province_plot <- analysis_data %>%
+  count(province) %>%
+  mutate(percentage = n / sum(n) * 100)
+
+ggplot(province_plot, aes(x = province, y = percentage, fill = province)) +
+  geom_bar(stat = "identity",fill = "navyblue") +
+  labs(x = "Province", y = "Percentage of Total") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+```
 
 
+```{r}
+library(dplyr)
+library(ggplot2)
 
-# Model
+# Define a function to calculate percentages for each category within a variable
+calculate_percentage <- function(data, category) {
+  data %>%
+    count(!!sym(category)) %>%
+    mutate(percentage = n / sum(n) * 100) %>%
+    rename(Category = !!sym(category)) %>%
+    mutate(Variable = category)  # store the variable name
+}
+
+# Apply the function to each of the variables you are interested in
+category_list = c("age", "gender", "family_income", "education_level", "province", "children_number")
+percentages <- lapply(category_list, calculate_percentage, data = analysis_data)
+
+# Combine the list of data frames into one data frame
+percentages_df <- bind_rows(percentages)
+
+# Generate the plot
+combined_plot <- ggplot(percentages_df, aes(x = Category, y = percentage, fill = Variable)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~Variable, scales = "free_x") + # allows each facet to have its own x axis
+  labs(x = "Category", y = "Percentage of Total") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1")
+
+# Print the combined plot
+combined_plot
+
+
+```
+
+
+## Measurement
+The CES 2021, consisting of an online cohort of 20,968 participants from the broader Canadian populace, was facilitated via the Leger Opinion panel. This study was structured in two distinct stages: the campaign period survey (CPS) and the post-election survey (PES). The CPS phase was further divided into three segments – "CPS", "CPS Modules", and "CPS Oversample", which were later consolidated into one dataset. Regarding the PES, all individuals who participated in the CPS were invited back for this subsequent survey after the election. Out of these, 15,069 individuals completed the PES, marking a response rate of 72%. Respondents needed to be aged 18 or over and Canadian citizens or permanent residents in order to participate.
+
+
+# Model {#sec-models}
 
 The goal of our modelling strategy is twofold. Firstly,...
 
@@ -109,7 +184,15 @@ y_i | \pi_i &\sim \text{Bern}(\pi_i) \\
 \end{align}
 
 
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+We run the model in R using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+The `stan_glm` function from `rstanarm`
+
+
+### Model justification
+
+We expect a positive relationship between the size of the wings and time spent aloft. In particular...
+
+We can use maths by including latex between dollar signs, for instance $\theta$.
 
 $$ log(\frac{p_{ij}}{1-p_{ij}}) = \beta_{0j}+\beta_1  x_{ij\ age} + \beta_2 x_{ij\ gender} + \beta_3  x_{ij\ education\ level} + \beta_4  x_{ij\ family\ income} + \beta_5  x_{ij\ children\ number}$$
 
@@ -157,28 +240,45 @@ certain age, gender, education level and family income.\
 $x_{ij}$ is a binary variable, it can only be 1 or 0 as all the variables we have are categorical, it also stands for the ith voter in jth province.
 
 
-### Model justification
-
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
 
 
-# Results
 
+# Results {#sec-result}
 
-```{r echo=FALSE}
-# Retrieve the Bayesian linear model from the saved .rds file
-liberal_model <- readRDS(file = "models/liberal_model.rds")
+```{r}
+#| label: models
+#| warning: false
+#| message: false
+#| echo: false
+
+liberal_model <- readRDS("../models/liberal_model.rds")
+cons_model <- readRDS("../models/conservative_model.rds")
+NDP_model <- readRDS("../models/NDP_model.rds")
+```
+
+## Model Coefficients
+
+```{r}
+#| label: tbl-liberal
+#| tbl-cap: Coefficients of social factors influence vote for liberal party
+#| warning: false
+#| echo: false
+library(modelsummary)
+
+modelsummary(
+  list(
+    "Vote for Liberal Party" = liberal_model 
+  ),
+  statistic = "mad", 
+  booktabs = TRUE 
+)
 
 ```
 
 
 
 
-
-
-# Discussion
+# Discussion {#sec-dis}
 What is done in this paper? What is something that we learn about the world? What is another thing that we learn about the world? What are some weaknesses of what was done? What is left to learn or how should we proceed in the future?
 
 ## First discussion point {#sec-first-point}
@@ -197,14 +297,29 @@ Weaknesses and next steps should also be included.
 
 \appendix
 
-# Appendix {-}
+# Appendix {#sec-A}
 
 
 # Additional data details
 
 # Model details {#sec-model-details}
 
-## Posterior predictive check
+## Posterior predictive check {#sec-posterior}
+
+```{r fig-posterior-plot, echo=FALSE, fig.cap="pp check"}
+
+pp_check(liberal_model) + 
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+pp_check(cons_model) + 
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+pp_check(NDP_model) + 
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
 
 
 ## Diagnostics
