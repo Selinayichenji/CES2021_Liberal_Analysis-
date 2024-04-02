@@ -12,13 +12,15 @@ library(tidyverse)
 library(rstanarm)
 
 #### Read data ####
-analysis_data <- read_csv("data/analysis_data/analysis_data.parquet")
+library(arrow)
+
+analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
 
 ### Model data ####
 
 liberal_model <- stan_glmer(
   vote_liberal ~ age + gender + education_level + family_income + children_number + (1 | province),
-  data = data,
+  data = analysis_data,
   family = binomial(link = "logit"),
   prior = normal(0, 2.5, autoscale = TRUE), 
   prior_intercept = normal(0, 2.5, autoscale = TRUE), 
@@ -28,15 +30,13 @@ liberal_model <- stan_glmer(
   control = list(adapt_delta = 0.99)
 )
 
-saveRDS(
-  liberal_model,
-  file = "liberal.rds"
-)
+summary(liberal_model)
 
+saveRDS(liberal_model, file = "models/liberal_model.rds")
 
 conservative_model <- stan_glmer(
   vote_conservative ~ age + gender + education_level + family_income + children_number + (1 | province),
-  data = data,
+  data = analysis_data,
   family = binomial(link = "logit"),
   prior = normal(0, 2.5, autoscale = TRUE), 
   prior_intercept = normal(0, 2.5, autoscale = TRUE), 
@@ -45,16 +45,13 @@ conservative_model <- stan_glmer(
   cores = 4,
   control = list(adapt_delta = 0.99)
 )
-
-saveRDS(
-  conservative_model,
-  file = "liberal.rds"
-)
+summary(conservative_model)
+saveRDS(conservative_model, file = "models/conservative_model.rds")
 
 
 NDP_model <- stan_glmer(
   vote_NDP ~ age + gender + education_level + family_income + children_number + (1 | province),
-  data = data,
+  data = analysis_data,
   family = binomial(link = "logit"),
   prior = normal(0, 2.5, autoscale = TRUE), 
   prior_intercept = normal(0, 2.5, autoscale = TRUE), 
@@ -63,13 +60,5 @@ NDP_model <- stan_glmer(
   cores = 4,
   control = list(adapt_delta = 0.99)
 )
-saveRDS(
-  NDP_model,
-  file = "liberal.rds"
-)
-
-#### Save model ####
-saveRDS(
-  first_model,
-  file = "models/first_model.rds"
-)
+summary(NDP_model)
+saveRDS(NDP_model, file = "models/NDP_model.rds")
