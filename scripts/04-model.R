@@ -7,27 +7,66 @@
 # Pre-requisites:
 # Any other information needed? None
 
-
-
 #### Workspace setup ####
 library(tidyverse)
 library(rstanarm)
 
 #### Read data ####
-analysis_data <- read_csv("data/analysis_data/analysis_data.csv")
+analysis_data <- read_csv("data/analysis_data/analysis_data.parquet")
 
 ### Model data ####
-first_model <-
-  stan_glm(
-    formula = flying_time ~ length + width,
-    data = analysis_data,
-    family = gaussian(),
-    prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_intercept = normal(location = 0, scale = 2.5, autoscale = TRUE),
-    prior_aux = exponential(rate = 1, autoscale = TRUE),
-    seed = 853
-  )
 
+liberal_model <- stan_glmer(
+  vote_liberal ~ age + gender + education_level + family_income + children_number + (1 | province),
+  data = data,
+  family = binomial(link = "logit"),
+  prior = normal(0, 2.5, autoscale = TRUE), 
+  prior_intercept = normal(0, 2.5, autoscale = TRUE), 
+  seed = 2024,
+  chains = 4,
+  cores = 4,
+  control = list(adapt_delta = 0.99)
+)
+
+saveRDS(
+  liberal_model,
+  file = "liberal.rds"
+)
+
+
+conservative_model <- stan_glmer(
+  vote_conservative ~ age + gender + education_level + family_income + children_number + (1 | province),
+  data = data,
+  family = binomial(link = "logit"),
+  prior = normal(0, 2.5, autoscale = TRUE), 
+  prior_intercept = normal(0, 2.5, autoscale = TRUE), 
+  seed = 2024,
+  chains = 4,
+  cores = 4,
+  control = list(adapt_delta = 0.99)
+)
+
+saveRDS(
+  conservative_model,
+  file = "liberal.rds"
+)
+
+
+NDP_model <- stan_glmer(
+  vote_NDP ~ age + gender + education_level + family_income + children_number + (1 | province),
+  data = data,
+  family = binomial(link = "logit"),
+  prior = normal(0, 2.5, autoscale = TRUE), 
+  prior_intercept = normal(0, 2.5, autoscale = TRUE), 
+  seed = 2024,
+  chains = 4,
+  cores = 4,
+  control = list(adapt_delta = 0.99)
+)
+saveRDS(
+  NDP_model,
+  file = "liberal.rds"
+)
 
 #### Save model ####
 saveRDS(

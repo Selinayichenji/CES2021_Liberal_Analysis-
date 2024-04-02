@@ -6,7 +6,7 @@ author:
 thanks: "Code and data are available at: https://github.com/Selinayichenji/Canadian_election_prediction.git."
 date: today
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "1) what was done, 2) what was found, and 3) why this matters (all at a high level). ."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -24,52 +24,51 @@ library(palmerpenguins)
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+This report utilizes the 2021 Canadian Election Study data and the "General Social Survey, Cycle 31: Families, Public Use Microdata File Documentation and User's Guide" (Statistics Canada, 2019) to solve the emergent dilemma of diminishing vote participation rate. The primary purpose of this report is to use the data set to predict future voter turnout by differentiating throughout the province(note: not include Quebec, Yukon, Northwest Territories, and Nunavut). 
 
-The remainder of this paper is structured as follows. @sec-data....
+Based on previous voting analysis, the main factors affecting voting include age, education level, family status(represented by the number of children), and economic well-being(represented by the family income). ("Factors Associated with Voting," 2015) Thus, the examination will focus on demographic variables, including age, gender, family income, education level, and the number of children in the vote rate corresponding to Canada's three main political parties. The three main political parties are Liberal, Conservative, and NDP(Canada's New Democrats), which occupied around 90 percent of the election 2010s. ("Canadian Federal Election Results," n.d.) The report will use logistic regression on different parties to model the participation rate. Whether the voting for particular parties or not will be recorded binary, as 1 or 0. Under this method, we assume the authenticity of our source, 2021 Canadian Election Study data, to build up the model. 
 
+The importance of this study is to reveal the complexities behind the recent decline in voter participation rates. By exploring the complex demographic factors and the voting rate of different political parties, this report could provide insights into the advantages of each of the three main parties during the election. According to past data, where liberals always take up the majority of the voting, we will assume the liberals will win the overall election. (Simon Fraser University, n.d.) Meanwhile, this report will examine how various demographic elements correlate with political affiliations, aiming to understand the challenges facing Canadian democracy comprehensively. In addition, the findings can not only predict the democratic participation rate throughout different states but also serve as a potential solution to the diminishing voting participation rate corresponding to each province, which can strengthen democracy throughout the nation.
+
+## estimand
+
+ The paper introduces the basic information contains data source, methodology, variables and measurements in @sec-data. The visualization and analysis of the tendency differences in moderation by people across three social factors are presented in @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-app is for appendix and @sec-ref is listed all references in this paper.
 
 
 # Data {#sec-data}
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+The survey data was sourced from the "2021 Canadian Election Study" (Stephenson, Harell, Rubenson, & Loewen, 2022), and the census information was obtained from the "General Social Survey, Cycle 31: Families, Public Use Microdata File Documentation and User’s Guide" (Statistics Canada, 2019). 
 
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
+## Analysis Tools
+Our paper applies using the statistical programming language R [@citeR]. Besides the programming tool, we also employ the following packages: readr [@read], ggplot2 [@gg2], dplyr [@dpr], tidyverse [@tidy], MetBrewer [@met], knitr [@citeknr], tidyr[@tdr], kableExtra[@kbe] and grid[@grid].
 
-Talk more about it.
+## Variables
 
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
+>**Age**: include five different groups: 18-29 years old, 30-44 years old, 45-59 years old, 60-74 years old, and above 74 years old. We manipulate the age for census data, which has different years than the survey data. 
 
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
 
-analysis_data <- read_csv(here::here("data/analysis_data/analysis_data.csv"))
+>**vote_liberal/vote_conservative/vote_NDP**: the voting result on whether to vote for three different parties. (Liberal, Conservative, or NDP) The result of voting or not is recorded in binary. 
 
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
 
-Talk way more about it. 
+>**Gender**: only include two types of gender, female and male, excluding non-binary or others
+
+
+>**education_level**: including six different education levels(Less than high school, High school, Non-University, University certificate below the bachelor, Bachelor's degree, Above the bachelor). 
+
+
+>**family_income**: including six different groups. ("Less than 25,000", "25,000 to 49,999", "50,000 to 74,999", "75,000 to 99,999", "100,000 to 124,999", "125,000 and more")
+
+>**Province**: 9 different states and excluding Quebec, Yukon, Northwest Territories, and Nunavut. 
+
+>**children_number**: the number of children within the family, which includes only six levels (0,1,2,3,4 and 4+ children)
+
+## Measurement
+The CES 2021, consisting of an online cohort of 20,968 participants from the broader Canadian populace, was facilitated via the Leger Opinion panel. This study was structured in two distinct stages: the campaign period survey (CPS) and the post-election survey (PES). The CPS phase was further divided into three segments – "CPS", "CPS Modules", and "CPS Oversample", which were later consolidated into one dataset. Regarding the PES, all individuals who participated in the CPS were invited back for this subsequent survey after the election. Out of these, 15,069 individuals completed the PES, marking a response rate of 72%.
+
+## Survey data summary
+
+distribution of age, gender, income, education level, province, children number
 
 
 
@@ -79,20 +78,69 @@ The goal of our modelling strategy is twofold. Firstly,...
 
 Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
 
-## Model set-up
+## Multilevel Logistic Regression Model
 
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
-
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
+\begin{align}
+y_i | \pi_i &\sim \text{Bern}(\pi_i) \\
+\text{logit}(\pi_i) &= \beta_0 + \alpha_{g[i]}^{\text{age}}+ \alpha_{g[i]}^{\text{gender}} + \alpha_{s[i]}^{\text{education level}} 
++\alpha_{s[i]}^{\text{family income}} + \alpha_{s[i]}^{\text{children number}} + \alpha_{s[i]}^{\text{state}} \\
+\beta_0 &\sim \text{Normal}(0, 2.5) \\
+\alpha_{g}^{\text{age}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5 \\
+\alpha_{g}^{\text{gender}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2 \\
+\alpha_{g}^{\text{education level}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
+\alpha_{g}^{\text{family income}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
+\alpha_{g}^{\text{children number}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,...,6 \\
+\alpha_{s}^{\text{state}} &\sim \text{Normal}(0, \sigma_{\text{state}}^2) \text{ for } s = 1,2,...,9 \\
+\sigma_{\text{state}} &\sim \text{Exponential}(1)
 \end{align}
 
+
 We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
+
+$$ log(\frac{p_{ij}}{1-p_{ij}}) = \beta_{0j}+\beta_1  x_{ij\ age} + \beta_2 x_{ij\ gender} + \beta_3  x_{ij\ education\ level} + \beta_4  x_{ij\ family\ income} + \beta_5  x_{ij\ children\ number}$$
+
+$$\beta_{0j} \thicksim Normal(\mu_{\beta_{0}}, \sigma^2_{\beta_{0}})$$
+
+
+In the model, $j$ is the province and $i$ is the individual voter indicator.
+
+$p$ represents the probability of the event of interest occurring,
+which is the voter's probability of voting for any specific party. $p_{ij}$
+means the voting of any specific party probability of ith voter in jth
+province.\
+
+$log(\frac{p_{ij}}{1-p_{ij}})$ means the log of odds of voting for
+ any specific party.\
+
+$\beta_0$ represents the intercept of the model and is the log of odds
+of voting for any specific party when the individual is at a certain age,
+with a certain gender, education level, family income and children
+number.\
+
+$\beta_{0j}$ stands for jth province effect on the log of odds of voting for
+any specific party, and we assume the intercept $\beta_{0j}$ in different
+provinces is random and follows a normal distribution with mean
+$\mu_{\beta_{0}}$ and variance $\sigma^2_{\beta_{0}}$.\
+
+$\beta_1$ represents the slope of age level in the model, then for any voter,
+one unit increase in age, we expect a $\beta_1$ increase in log odds of
+voting for any specific party. $\beta_2$ represents the average difference in
+log odds of voting for any specific party between Males and Females for a
+certain age, education level, family income and children number.\
+
+$\beta_3$ represents the average difference in log odds of voting for
+any specific party between groups with different education levels for a
+certain age, gender, family income and children number.\
+
+$\beta_4$ represents the average difference in log odds of voting for
+any specific party between groups with different family income levels for a certain
+age, gender, education level and children number.\
+
+$\beta_5$ represents the average difference in log odds of voting for
+any specific party between groups with different children number levels for a
+certain age, gender, education level and family income.\
+
+$x_{ij}$ is a binary variable, it can only be 1 or 0 as all the variables we have are categorical, it also stands for the ith voter in jth province.
 
 
 ### Model justification
@@ -106,38 +154,13 @@ We can use maths by including latex between dollar signs, for instance $\theta$.
 
 Our results are summarized in @tbl-modelresults.
 
-```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
 
-library(rstanarm)
-
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
-
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
-)
-```
 
 
 
 
 # Discussion
+What is done in this paper? What is something that we learn about the world? What is another thing that we learn about the world? What are some weaknesses of what was done? What is left to learn or how should we proceed in the future?
 
 ## First discussion point {#sec-first-point}
 
@@ -164,51 +187,11 @@ Weaknesses and next steps should also be included.
 
 ## Posterior predictive check
 
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
 
 ## Diagnostics
 
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
 
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
 
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
 
 
 
