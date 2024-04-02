@@ -20,6 +20,7 @@ link-citations: true
 #| message: false
 library(tidyverse)
 
+
 library(here)
 library(dplyr)
 library(arrow)
@@ -27,6 +28,7 @@ library(ggplot2)
 library(kableExtra)
 library(bayesplot)
 library(rstanarm)
+library(tidyr)
 
 ```
 
@@ -48,9 +50,8 @@ The importance of this study is to reveal the complexities behind the recent dec
 
 
 
+ The paper introduces the basic information contains data source, methodology, variables and measurements in @sec-data. The visualization and analysis of the tendency differences in moderation by people across three social factors are presented in @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-A is for appendix and @sec-ref is listed all references in this paper.
 
-
- The paper introduces the basic information contains data source, methodology, variables and measurements in @sec-data. The visualization and analysis of the tendency differences in moderation by people across three social factors are presented in @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-app is for appendix and @sec-ref is listed all references in this paper.
 
 
 # Data {#sec-data}
@@ -94,7 +95,8 @@ head(analysis_data, 5) |>
   kable(
     col.names = c("age", "vote_liberal", "vote_conservative", "vote_NDP","gender","education_level","family_income","province","children_number"),
     booktabs = TRUE
-  )
+  )%>%
+  kable_styling(latex_options = c("scale_down")) 
 
 ```
 
@@ -103,27 +105,42 @@ head(analysis_data, 5) |>
 All detailed tables include summary data of 6 variables are in @sec-A
 age, gender, income, education level, province, children number
 
-```{r}
-#| label: fig-pro
-#| fig-cap:  Population Distribution by Province in CES2021
-#| warning: false
+
+
+```{r, fig.width=10, fig.height=6}
 #| echo: false
+#| eval: true
+#| label: fig-percent
+#| fig-cap: Percentage of different groups in a category
+#| warning: false
 
-province_plot <- analysis_data %>%
-  count(province) %>%
-  mutate(percentage = n / sum(n) * 100)
+analysis_data_2 <- analysis_data
+labels_province <- c("Ontario" = "ON", "Quebec" = "QC", "British Columbia" = "BC", "Alberta" = "AB",
+                     "Manitoba" = "MB", "New Brunswick" = "NB", "Newfoundland and Labrador" = "NL",
+                     "Nova Scotia" = "NS", "Prince Edward Island" = "PE", "Saskatchewan" = "SK")
 
-ggplot(province_plot, aes(x = province, y = percentage, fill = province)) +
-  geom_bar(stat = "identity",fill = "navyblue") +
-  labs(x = "Province", y = "Percentage of Total") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-```
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(province = recode(province, !!!labels_province))
 
+#origin<-c("Less than $25,000", "$25,000 to $49,999", "$50,000 to $74,999", "$75,000 to $99,999",
+                                     #   "$100,000 to $124,999", "$125,000 and more")
 
-```{r}
-library(dplyr)
-library(ggplot2)
+labels_income <- c("Less than $25,000" = "<25k", "$25,000 to $49,999"= "25~50k","$50,000 to $74,999" = "50~75k","$75,000 to $99,999" = "75~100k","$100,000 to $124,999" = "100~125k","$125,000 and more" = ">125k")
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(family_income = recode(family_income, !!!labels_income))
+
+labels_education <- c(
+  "Less than high school" = "Below HS",
+  "High school" = "HS Grad",
+  "Non-University" = "Non-Uni",
+  "University certificate below the bachelor" = "Uni Cert",
+  "Bachelor's degree" = "Bachelor",
+  "Above the bachelor" = "Post-Bach"
+)
+
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(education_level = recode(education_level, !!!labels_education))
+
 
 # Define a function to calculate percentages for each category within a variable
 calculate_percentage <- function(data, category) {
@@ -136,25 +153,76 @@ calculate_percentage <- function(data, category) {
 
 # Apply the function to each of the variables you are interested in
 category_list = c("age", "gender", "family_income", "education_level", "province", "children_number")
-percentages <- lapply(category_list, calculate_percentage, data = analysis_data)
+percentages <- lapply(category_list, calculate_percentage, data = analysis_data_2)
 
 # Combine the list of data frames into one data frame
 percentages_df <- bind_rows(percentages)
+
+income_levels_order <- c("<25k","25~50k","50~75k","75~100k","100~125k",">125k")
+percentages_df <- percentages_df %>%
+  mutate(Category = if_else(Variable == "family_income", factor(Category, levels = income_levels_order), as.factor(Category)))
+
+educ_levels_order <- c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach")
+percentages_df <- percentages_df %>%
+  mutate(Category = if_else(Variable == "education_level", factor(Category, levels = educ_levels_order), as.factor(Category)))
 
 # Generate the plot
 combined_plot <- ggplot(percentages_df, aes(x = Category, y = percentage, fill = Variable)) +
   geom_bar(stat = "identity") +
   facet_wrap(~Variable, scales = "free_x") + # allows each facet to have its own x axis
-  labs(x = "Category", y = "Percentage of Total") +
+  labs( y = "Percentage of Total") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
   scale_fill_brewer(palette = "Set1")
 
 # Print the combined plot
 combined_plot
 
+```
+
+
+```{r, fig.width=10, fig.height=6}
+#| echo: false
+#| eval: true
+#| label: fig-vote-percent
+#| fig-cap: Percentage of Voting for 3 parties in different groups
+#| warning: false
+survey_long <- analysis_data_2 %>%
+  pivot_longer(cols = starts_with("vote_"), 
+               names_to = "party", 
+               values_to = "vote") %>%
+  pivot_longer(cols = c("age", "gender", "family_income", "education_level", "province", "children_number"),
+               names_to = "category",
+               values_to = "group") %>%
+  group_by(category, group, party) %>%
+  summarise(vote_percent = mean(vote, na.rm = TRUE), .groups = 'drop') %>%
+  ungroup()
+
+
+survey_long <- survey_long %>%
+  mutate(group = case_when(
+    category == "family_income" & group %in% c("<25k","25~50k","50~75k","75~100k","100~125k",">125k") ~ factor(group, levels = c("<25k","25~50k","50~75k","75~100k","100~125k",">125k")),
+    category == "education_level" & group %in% c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach") ~ factor(group, levels = c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach")),
+    TRUE ~ as.factor(group)
+  ))
+
+ggplot(survey_long, aes(x = group, y = vote_percent, color = party, group = party)) +
+  geom_line() + 
+  geom_point() + 
+  scale_color_manual(values = c("vote_liberal" = "red", 
+                                "vote_conservative" = "blue", 
+                                "vote_NDP" = "orange")) +
+  labs(title = "Voting Preferences by Category in Survey",
+       x = "Group", 
+       y = "Percentage", 
+       color = "Party") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
+  facet_wrap(~category, scales = "free_x", ncol = 2) 
+
 
 ```
+
 
 
 ## Measurement
@@ -263,35 +331,65 @@ NDP_model <- readRDS("../models/NDP_model.rds")
 #| tbl-cap: Coefficients of social factors influence vote for liberal party
 #| warning: false
 #| echo: false
-library(modelsummary)
 
-modelsummary(
-  list(
-    "Vote for Liberal Party" = liberal_model 
-  ),
-  statistic = "mad", 
-  booktabs = TRUE 
+library(modelsummary)
+library(kableExtra)
+# 首先获取模型摘要
+msummary <- modelsummary(
+  list("Vote for Liberal Party" = liberal_model),
+  statistic = "mad",
+  booktabs = TRUE
 )
+
+# 然后我们将msummary的结果分为两部分
+# 以下是一个如何操作的例子
+# 请注意，这需要您手动指定分割点
+# 比如，假设我们有10个系数，我们可以在第5个系数处分割
+part1 <- msummary[1:11,]
+part2 <- msummary[11:22,]
+
+# 创建两个并排的表格
+table1 <- kable(part1, booktabs = TRUE) %>%
+  kable_styling(font_size = 7) %>%
+  pack_rows(index = c("Part 1"))
+
+table2 <- kable(part2, booktabs = TRUE) %>%
+  kable_styling(font_size = 7) %>%
+  pack_rows(index = c("Part 2"))
+
+# 使用 kableExtra 的两列布局函数
+library(kableExtra)
+table_combined <- table1 %>% add_indent(levels = 1) %>%
+  column_spec(1, width = "5in") %>%
+  kable_styling(position = "float_left")
+
+table_combined2 <- table2 %>% add_indent(levels = 1) %>%
+  column_spec(1, width = "5in") %>%
+  kable_styling(position = "float_right")
+
+# 打印两个表格
+table_combined
+table_combined2
+
 
 ```
 
 
 
-
 # Discussion {#sec-dis}
-What is done in this paper? What is something that we learn about the world? What is another thing that we learn about the world? What are some weaknesses of what was done? What is left to learn or how should we proceed in the future?
 
-## First discussion point {#sec-first-point}
+
+## What is done in this paper? {#sec-first-point}
 
 If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
 
-## Second discussion point
+## What is something that we learn about the world?
 
-## Third discussion point
+## What is another thing that we learn about the world?
 
 ## Weaknesses and next steps
 
-Weaknesses and next steps should also be included.
+Nevertheless, our result's prediction is surprisingly accompanied by recent economic conditions, suggesting a potential winning for the Conservative Party in the upcoming election.Our report relies on the assumption of complete trust in the authenticity of the data used; if responses are recorded in the survey or census showing fake information, it is impossible to eliminate the error caused by that misinformation. Meanwhile, accurate census data depicting the age distribution in the predicted year is essential. The percentage of different ages and the preference for different parties may vary throughout the years, leading to potential inaccuracies in our prediction. The exclusion of Quebec, Yukon, Northwest Territories, and Nunavut from our province variable, either due to distinct political parties within the province (Quebec) or missing data in our sources (Yukon et al.), limits the generalizability of our predictions of these regions. Furthermore, there are different economic conditions between the year of data collected and the year of the prediction. The variation of the economic situation could affect the outcomes of the winning party.Looking forward, analyzing the voting results within Quebec, Yukon, Northwest Territories, and Nunavut satisfies their unique provincial characteristic result better. 
 
 \newpage
 
@@ -332,6 +430,6 @@ pp_check(NDP_model) +
 \newpage
 
 
-# References
+# References {#sec-ref}
 
 
