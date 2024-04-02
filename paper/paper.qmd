@@ -12,15 +12,25 @@ number-sections: true
 bibliography: references.bib
 ---
 
-```{r}
+```{r setup}
 #| include: false
 #| warning: false
 #| message: false
 
 library(tidyverse)
-library(palmerpenguins)
+library(arrow)
 ```
 
+```{r}
+#| label: cleaned
+#| warning: false
+#| message: false
+#| results: 'hide'
+#| echo: false
+
+analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
+
+```
 
 # Introduction
 
@@ -63,6 +73,10 @@ Our paper applies using the statistical programming language R [@citeR]. Besides
 
 >**children_number**: the number of children within the family, which includes only six levels (0,1,2,3,4 and 4+ children)
 
+## Sample of cleaned data
+
+
+
 ## Measurement
 The CES 2021, consisting of an online cohort of 20,968 participants from the broader Canadian populace, was facilitated via the Leger Opinion panel. This study was structured in two distinct stages: the campaign period survey (CPS) and the post-election survey (PES). The CPS phase was further divided into three segments – "CPS", "CPS Modules", and "CPS Oversample", which were later consolidated into one dataset. Regarding the PES, all individuals who participated in the CPS were invited back for this subsequent survey after the election. Out of these, 15,069 individuals completed the PES, marking a response rate of 72%.
 
@@ -82,14 +96,14 @@ Here we briefly describe the Bayesian analysis model used to investigate... Back
 
 \begin{align}
 y_i | \pi_i &\sim \text{Bern}(\pi_i) \\
-\text{logit}(\pi_i) &= \beta_0 + \alpha_{g[i]}^{\text{age}}+ \alpha_{g[i]}^{\text{gender}} + \alpha_{s[i]}^{\text{education level}} 
-+\alpha_{s[i]}^{\text{family income}} + \alpha_{s[i]}^{\text{children number}} + \alpha_{s[i]}^{\text{state}} \\
+\text{logit}(\pi_i) &= \beta_0 + \alpha_{a[i]}^{\text{age}}+ \alpha_{g[i]}^{\text{gender}} + \alpha_{e[i]}^{\text{education level}} 
++\alpha_{f[i]}^{\text{family income}} + \alpha_{c[i]}^{\text{children number}} + \alpha_{s[i]}^{\text{state}} \\
 \beta_0 &\sim \text{Normal}(0, 2.5) \\
-\alpha_{g}^{\text{age}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5 \\
+\alpha_{a}^{\text{age}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5 \\
 \alpha_{g}^{\text{gender}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2 \\
-\alpha_{g}^{\text{education level}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
-\alpha_{g}^{\text{family income}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
-\alpha_{g}^{\text{children number}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,...,6 \\
+\alpha_{e}^{\text{education level}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
+\alpha_{f}^{\text{family income}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,3,4,5,6 \\
+\alpha_{c}^{\text{children number}} &\sim \text{Normal}(0, 2.5) \text{ for } g = 1,2,...,6 \\
 \alpha_{s}^{\text{state}} &\sim \text{Normal}(0, \sigma_{\text{state}}^2) \text{ for } s = 1,2,...,9 \\
 \sigma_{\text{state}} &\sim \text{Exponential}(1)
 \end{align}
@@ -152,7 +166,12 @@ We can use maths by including latex between dollar signs, for instance $\theta$.
 
 # Results
 
-Our results are summarized in @tbl-modelresults.
+
+```{r echo=FALSE}
+# Retrieve the Bayesian linear model from the saved .rds file
+liberal_model <- readRDS(file = "models/liberal_model.rds")
+
+```
 
 
 
