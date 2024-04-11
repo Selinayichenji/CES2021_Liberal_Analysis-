@@ -61,24 +61,21 @@ liberal_support <- tibble(
   select(-support_prob, liberal_vote, gender, education, age, child_number, income)
 
 # Test simulated data
-# Test if 'gender' contains only 'Female' and 'Male'
-expect_setequal(unique(analysis_data$gender), c("Female", "Male"))
+# Test if gender only contains "Female" and "Male"
+expect_setequal(unique(liberal_support$gender), c("Female", "Male"))
 
-# Test if 'age' contains the specified age groups
-expect_setequal(unique(analysis_data$age), c("18-29", "30-44", "45-59", "60-74", "75+"))
+# Test if age groups match the expectations
+expect_setequal(unique(liberal_support$age), c("<30", "30-39", "40-49", "50-59", "60+"))
 
-# Test that 'vote_liberal' only contains binary results
-expect_true(all(analysis_data$vote_liberal %in% c(0, 1)))
+# Test if the number of children contains expected values
+expect_setequal(unique(liberal_support$child_number), c("0", "1", "2", "3", "4", "5+"))
 
-# Test that 'vote_conservative' only contains binary results
-expect_true(all(analysis_data$vote_conservative %in% c(0, 1)))
+# Test if income contains expected values
+expect_setequal(unique(liberal_support$income), c("<$25k", "$25k-$49k", "$50k-$74k", "$75k-$99k", "$100k-$124k", "$125k+"))
 
-# Test that 'vote_NDP' only contains binary results
-expect_true(all(analysis_data$vote_NDP %in% c(0, 1)))
+# Test if education levels contain expected values
+expect_setequal(unique(liberal_support$education), c("< High school", "High school", "Non-University", "Bachelor", "Post-grad"))
 
-# Test if 'province' contains the expected set of provinces
-expected_provinces <- c("British Columbia", "Ontario", "Manitoba", "Alberta",
-                        "New Brunswick", "Newfoundland and Labrador",
-                        "Nova Scotia", "Prince Edward Island", "Saskatchewan")
-expect_setequal(unique(analysis_data$province), expected_provinces)
+# Test if voting choice only contains "yes" and "no"
+expect_setequal(unique(liberal_support$liberal_vote), c("yes", "no"))
 
