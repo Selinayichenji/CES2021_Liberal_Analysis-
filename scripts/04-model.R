@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Models for predicting 2024 Canadian election
+# Purpose: Build a multi-level logistic linear regression model for the Liberal Party in CES2021
 # Author: Yichen Ji
 # Date: 27 March 2024
 # Contact: yic.ji@mail.utoronto.ca
@@ -11,7 +11,7 @@
 library(tidyverse)
 library(rstanarm)
 library(arrow)
-
+library(plumber)
 
 #### Read data ####
 analysis_data <- read_parquet("data/analysis_data/analysis_data.parquet")
@@ -41,6 +41,4 @@ liberal_model <- stan_glmer(
 
 #Save the model
 saveRDS(liberal_model, file = "models/liberal_model.rds")
-
-
 

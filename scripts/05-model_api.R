@@ -1,3 +1,14 @@
+#### Preamble ####
+# Purpose: Build API for the Liberal Model
+# Author: Yichen Ji
+# Date: 27 March 2024
+# Contact: yic.ji@mail.utoronto.ca
+# License: MIT
+# Pre-requisites:download packages plumber, rstanarm and arrow
+# Any other information needed? None
+
+
+
 # Load necessary libraries
 library(plumber)
 library(rstanarm)
@@ -36,10 +47,14 @@ function(age, gender, education_level, family_income, children_number, province)
                          province = province)
   
   # Make prediction using the `liberal_model`
-  prediction <- posterior_predict(liberal_model, newdata = new_data)
+  simulated_predictions <- posterior_predict(liberal_model, newdata = new_data)
   
-  # Return the prediction
-  return(list(prediction = prediction))
+  # Calculate the mean of the simulated predictions
+  mean_prediction <- mean(simulated_predictions)
+  
+  # Return the mean prediction as a single probability value
+  return(list(prediction = mean_prediction))
+  
 }
 
 #* @plumber
