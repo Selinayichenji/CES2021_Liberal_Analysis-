@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Test data
+# Purpose: Test cleaned data
 # Author: Yichen Ji
 # Date: 27 March 2024
 # Contact: yic.ji@mail.utoronto.ca
