@@ -5,7 +5,8 @@ library(arrow)
 
 # Assuming your stan_glmer model is saved as 'liberal_model.rds'
 # Load your previously saved stan_glmer model
-liberal_model <- readRDS(".../models/liberal_model.rds")
+
+liberal_model <- readRDS("../models/liberal_model.rds")
 
 #* @apiTitle Voting Prediction API
 #* @apiDescription This API predicts the likelihood of an individual voting for the Liberal Party based on a statistical model.
@@ -41,8 +42,7 @@ function(age, gender, education_level, family_income, children_number, province)
   return(list(prediction = prediction))
 }
 
-# Run the API
 #* @plumber
 function(pr) {
-  pr$run(port=8000)
+  pr
 }
