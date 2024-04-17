@@ -1,5 +1,5 @@
 ---
-title: "Analysising how sociodemographic characteristics influence voting for the Liberal Party of Canada"
+title: "Analyzing how sociodemographic characteristics influence voting for the Liberal Party of Canada"
 subtitle: "Decoding CES 2021 Vote Data by using A Multilevel Logistic Regression Model"
 author: 
   - Yichen ji
@@ -14,6 +14,9 @@ bibliography: references.bib
 link-citations: true
 output:
   pdf_document: default
+header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
 
 ---
 
@@ -50,9 +53,9 @@ Previous studies have often focused on broader demographic trends or isolated th
 
 Based on prior voting analyses, key factors such as age, education level, family status (represented by the number of children), and economic well-being (indicated by family income) significantly influence voting behaviors [@Factors]. To provide a more comprehensive view, gender will also be included as an influential factor in this study. Additionally, considering that Canada's population is concentrated in specific provinces, provincial distinctions will be accounted for as a random effects variable in our model. Notably, this study excludes Quebec, Yukon, Northwest Territories, and Nunavut due to distinct electoral dynamics in these regions. Under this method, we assume the authenticity of our source, 2021 Canadian Election Study data, to build up the multilevel logistic model. The provinces will serve as our random effects variable, assigning different intercepts to each province. This approach reflects the unique characteristics of each province, thereby enhancing the accuracy of our analysis. Whether the voting for particular parties or not will be recorded binary, as 1 or 0.  The estimand is the log-odds ratio of the effect of each explanatory variable on the probability of voting for the liberal party of Canada. 
 
-The analysis reveals a 
+The analysis reveals age, wealth, and education level have a positive relationship with voting liberal, while children number, gender, and province do not. 
 
-The remainder of this paper is structured as follows: the basic information contains data source, methodology, variables, measurements and the visualization of population structure and voting rate are in the @sec-data. The equation and interpretation of model are presented in @sec-models. The data and figure of coefficients are in the @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-A is for appendix and @sec-ref is listed all references in this paper.
+The remainder of this paper is structured as follows: the basic information contains data source, methodology, variables, measurements and the visualization of population structure and voting rate are in the @sec-data. The equation and interpretation of model are presented in @sec-models. The data and figure of coefficients are in the @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-A contains pp check and r-hat check for the model and @sec-ref is listed all references in this paper.
 
 
 
@@ -372,10 +375,9 @@ select(c(1:1))%>%
 kable()
 
 ```
-@tbl-liberal-3 shows the intercept for each province. The coefficients confirms our prediction from checking the percentage of voting for the liberal party in data section.
+@tbl-liberal-3 shows the intercept for each province. The coefficients align with the trend illustrated in @fig-vote-percent.
 
 
-\newpage
 # Discussion {#sec-dis}
 
 
@@ -384,9 +386,15 @@ In the paper, researchers conducted an in-depth analysis of Canadian voter behav
 
 
 ## What we learn about the world?
-Through this study, we identified age, education level, economic status, and gender as significant factors influencing voter support for the Liberal Party. As age increases, voter support for the Liberal Party tends to increase as well, suggesting that older voters may prefer parties that promote stable policies and emphasize social welfare. Moreover, voters with higher education levels tend to support the Liberal Party, likely reflecting their approval of the party’s policies on education, environmental protection, and technological innovation. Similarly, the Liberal Party finds strong support among high-income groups, possibly due to the party's policies promoting economic development and business innovation.
+Through this study, we have gained a nuanced understanding of the factors that influence voter support for the Liberal Party in Canada. As individuals age, their likelihood to support the Liberal Party increases, a trend particularly noticeable among older voters who have traditionally been Conservative supporters. This shift could be attributed to the Liberal Party's efforts in addressing issues pertinent to senior citizens, possibly influenced by recent events such as the COVID-19 vaccination rollout, where a significant percentage of senior Canadians have been vaccinated. The implication here is that policies that directly impact the well-being and concerns of older adults can be a powerful determinant of their voting preferences.
 
-Based on these findings, policymakers and the Liberal Party should consider developing specific policies to attract and maintain the support of these key voter groups. For instance, they could increase discussions on retirement insurance and health protection to appeal to older voters; continue supporting educational and research projects to solidify support among highly educated voters; and maintain support from high-income groups through tax incentives and business support strategies. Additionally, strengthening support for women's rights could also help to increase female voter turnout for the Liberal Party.
+Furthermore, analysis of voting intentions suggests that gender plays a significant role among younger voters, where we see distinct patterns such as young men favoring the Conservative Party and young women showing stronger support for the NDP. Yet, for the Liberal Party, the support appears to be consistent across different segments, irrespective of age or gender. This consistency suggests that the Liberal Party's policies may have broad appeal across different demographics or that the party's stance on various issues is not polarizing enough to create a noticeable gender gap within its supporters.
+
+Educational attainment is another influential factor, with those holding higher education levels likely resonating with the Liberal Party's emphasis on education, environmental protection, and technological innovation. These voters may view the Liberal Party as more aligned with their values and interests, particularly in policy areas that affect long-term societal progress.
+
+Given these insights, it would be beneficial for policymakers and the Liberal Party to focus on developing and communicating policies that address the specific needs and concerns of these key voter groups. For the older demographic, continuing to provide and expand on healthcare, retirement insurance, and health protection will likely be vital. For the highly educated demographic, emphasizing the Liberal Party's commitment to advancing education and innovation could solidify support. Additionally, understanding the salient issues for different age and gender groups can help tailor communication and policy initiatives more effectively.
+
+These observations are crucial for the Liberal Party if they are to maintain and strengthen their voter base, especially considering the evolving dynamics within the Canadian electorate.
 
 
 ## Weaknesses and next steps
@@ -402,11 +410,6 @@ Looking forward, analyzing the voting results within Quebec, Yukon, Northwest Te
 \appendix
 
 # Appendix {#sec-A}
-
-
-# Additional data details
-
-# Model details {#sec-model-details}
 
 ## Posterior predictive check {#sec-posterior}
 
