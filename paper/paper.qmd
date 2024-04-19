@@ -1,5 +1,5 @@
 ---
-title: "Analyzing how sociodemographic characteristics influence voting for the Liberal Party of Canada"
+title: "Older, Wealthier, and More Educated: The Profile of Canadians More Likely to Vote Liberal"
 subtitle: "Decoding CES 2021 Vote Data by using A Multilevel Logistic Regression Model"
 author: 
   - Yichen ji
