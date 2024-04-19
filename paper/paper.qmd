@@ -3,7 +3,7 @@ title: "Analyzing how sociodemographic characteristics influence voting for the 
 subtitle: "Decoding CES 2021 Vote Data by using A Multilevel Logistic Regression Model"
 author: 
   - Yichen ji
-thanks: "Code and data are available at: https://github.com/Selinayichenji/Canadian_election_prediction.git."
+thanks: "Code and data are available at: https://github.com/Selinayichenji/CES2021_Liberal_Analysis-.git."
 date: today
 date-format: long
 abstract: "This research utilized the 2021 Canadian Election Study and a multilevel logistic regression to examine how sociodemographic factors affect voting for the Liberal Party of Canada. It found that age, wealth, and education level significantly increase the likelihood of voting liberal, while children number, gender, and province do not. These results highlight the impact of life experiences and advantages on political ideologies and decision-making. Understanding these voting behaviors allows the Liberal Party of Canada to refine their electoral strategies, improving campaign effectiveness and voter engagement."
