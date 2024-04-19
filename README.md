@@ -1,13 +1,12 @@
 # Canadian_election_prediction
 
 # Description
-This GitHub Repository contains all files used to generate the paper *Canadian Conservative party may win the election based on the survey in 2021*.
+This GitHub Repository contains all files used to generate the paper *Analyzing how sociodemographic characteristics influence voting for the Liberal Party of Canada*.
 
 # File Structure
 The structure of this Repository is as follows:
 - `data/raw_data` includes data used for the replication report downloaded from original database of original paper
 - `data/analysis_data` includes cleaned data for the report.
-- `other/llm` includes file contains all chat history of llm about the report.
 - `other/sketches` includes sketches of the graphs used in this report.
 - `paper` includes a PDF version of the final paper, the Quarto file used to create the PDF, and a file containing the references for the paper.
 - `scripts` includes R scripts for data simulation, downloading, cleaning, testing and model building.
