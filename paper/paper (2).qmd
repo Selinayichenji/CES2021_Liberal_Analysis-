@@ -1,0 +1,450 @@
+---
+title: "Analyzing how sociodemographic characteristics influence voting for the Liberal Party of Canada"
+subtitle: "Decoding CES 2021 Vote Data by using A Multilevel Logistic Regression Model"
+author: 
+  - Yichen ji
+thanks: "Code and data are available at: https://github.com/Selinayichenji/Canadian_election_prediction.git."
+date: today
+date-format: long
+abstract: "This research utilized the 2021 Canadian Election Study and a multilevel logistic regression to examine how sociodemographic factors affect voting for the Liberal Party of Canada. It found that age, wealth, and education level significantly increase the likelihood of voting liberal, while children number, gender, and province do not. These results highlight the impact of life experiences and advantages on political ideologies and decision-making. Understanding these voting behaviors allows the Liberal Party of Canada to refine their electoral strategies, improving campaign effectiveness and voter engagement."
+format: pdf
+toc: true
+number-sections: true
+bibliography: references.bib
+link-citations: true
+output:
+  pdf_document: default
+header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+
+---
+
+```{r setup}
+#| include: false
+#| warning: false
+#| message: false
+library(tidyverse)
+library(here)
+library(tidyr)
+library(dplyr)
+library(arrow)
+library(ggplot2)
+library(kableExtra)
+library(bayesplot)
+library(rstanarm)
+library(modelsummary)
+library(lintr)
+library(lme4)
+```
+
+```{r include=FALSE, message=FALSE}
+# read the data file and store it in the variable
+analysis_data <- read_parquet(here("data", "analysis_data", "analysis_data.parquet"))
+```
+
+
+# Introduction
+
+Voting decisions are at the heart of democratic societies, as they shape the composition of governments and determine the policies that govern our lives [@FIVD].  To understand the main groups shaping Canada's political policies, this paper will focus on the demographic composition and behavioral patterns of the liberal voters historically  take up the majority of the voting [@sm].
+
+Previous studies have often focused on broader demographic trends or isolated the effects of singular socioeconomic factors on voting behavior. However, there is a need for a more integrated analysis that considers how combinations of these factors interact to influence political orientation. This paper seeks to fill that gap by examining multiple variables simultaneously to provide a more comprehensive understanding of voter behavior. 
+
+Based on prior voting analyses, key factors such as age, education level, family status (represented by the number of children), and economic well-being (indicated by family income) significantly influence voting behaviors [@Factors]. To provide a more comprehensive view, gender will also be included as an influential factor in this study. Additionally, considering that Canada's population is concentrated in specific provinces, provincial distinctions will be accounted for as a random effects variable in our model. Notably, this study excludes Quebec, Yukon, Northwest Territories, and Nunavut due to distinct electoral dynamics in these regions. Under this method, we assume the authenticity of our source, 2021 Canadian Election Study data, to build up the multilevel logistic model. The provinces will serve as our random effects variable, assigning different intercepts to each province. This approach reflects the unique characteristics of each province, thereby enhancing the accuracy of our analysis. Whether the voting for particular parties or not will be recorded binary, as 1 or 0.  The estimand is the log-odds ratio of the effect of each explanatory variable on the probability of voting for the liberal party of Canada. 
+
+The statistical analysis indicates that demographic factors such as age, gender, education, family size, and regional differences significantly influence voter preferences towards the Liberal Party. Older age groups and individuals with higher educational qualifications are more likely to support the Liberals, while males and larger families tend to show lower support. Regional variability also plays a crucial role, highlighting the diverse political landscapes across provinces.
+Understanding these factors is essential for several reasons. It allows political strategists to craft targeted campaign messages and policies that resonate with specific demographic groups, potentially swaying voter decisions. Additionally, this analysis aids in predicting election outcomes and can serve as a valuable tool for academic and governmental studies aiming to understand and address the diverse needs and concerns of the population. This insight is critical for fostering a more engaged and informed electorate, leading to more representative governance.
+
+The remainder of this paper is structured as follows: the basic information contains data source, methodology, variables, measurements and the visualization of population structure and voting rate are in the @sec-data. The equation and interpretation of model are presented in @sec-models. The data and figure of coefficients are in the @sec-result. And in @sec-dis, we discuss what we have learned, our understanding of the world, the limitations, and the next steps of our research. @sec-A contains pp check and r-hat check for the model and @sec-ref is listed all references in this paper.
+
+
+
+# Data {#sec-data}
+
+The Canadian Election Study (CES) is a world-class study of Canadian elections and related attitudes of key importance to the study and understanding of democratic processes and elections. In terms of global research stature, it is comparable to other national efforts such as the American National Election Studies and the British Election Study, among others.[@cesintro]
+
+
+## Measurement
+The CES 2021 was a comprehensive study conducted online, engaging a cohort of 20,968 participants selected from across Canada via the Leger Opinion panel. This bilingual survey, accommodating both English and French speakers, was open to individuals who were at least 18 years old and held Canadian citizenship or permanent residency. The study was methodically organized into two phases: the campaign period survey (CPS), which ran from August 17 to September 19, 2021, and the post-election survey (PES) carried out from September 23 to October 4, 2021. The CPS was subdivided into three parts—'CPS', 'CPS Modules', and 'CPS Oversample'—and these were ultimately merged into a single dataset. Participants from the CPS were invited to join the PES after the election concluded, with 15,069 individuals responding, resulting in a 72% response rate for the latter phase of the study.
+
+
+## Analysis Tools
+The data analysis performed by the statistical programming language `R` [@citeR]. 
+
+Besides the programming tool, we also employ the following packages: `here`[@here], `ggplot2`[@gg2], `dplyr` [@dp], `tidyverse` [@td], `tidyr`[@tdr], `kableExtra`[@kbe], `arrow`[@ar] and `lintr`[@ltr].
+
+The `rstanarm`[@R-rst] package was used to build the logistic multilevel linear regression model. `bayesplot`[@R-bys] was ustilized for Posterior predictive check and drawing R-hat figure in order to check the convergence of the MCMC algorithm. And `modelsummary`[@ms] was used for obtaining the coefficients of our model.
+
+## Variables
+
+- **Age**:five age groups: 18-29 years old, 30-44 years old, 45-59 years old, 60-74 years old, and above 74 years old. 
+
+- **vote_liberal/vote_conservative/vote_NDP**: the voting result on whether to vote for three different parties. (Liberal, Conservative, or NDP) The result of voting or not is recorded in binary. 
+
+
+- **Gender**: only include two types of gender, female and male, excluding non-binary or others
+
+
+- **education_level**: including six different education levels from low to high: Less than high school, High school, Non-University, University certificate below the bachelor, Bachelor's degree, Above the bachelor. 
+
+
+- **family_income**: including six different groups, from low to high:
+("Less than 25,000", "25,000 to 49,999", "50,000 to 74,999", "75,000 to 99,999", "100,000 to 124,999", "125,000 and more")
+
+- **Province**: Ontario, Quebec, British Columbia, Alberta, Manitoba, New Brunswick, Newfoundland and Labrador, Nova Scotia, Prince Edward Island, Saskatchewan (excluding Quebec, Yukon, Northwest Territories, and Nunavut.)
+The corresponded short terms are ON, QC, BC, AB, MB, NB, NL, NS, PE, SK.
+
+- **children_number**: the number of children within the family, which includes only six levels (0,1,2,3,4 and 4+ children)
+
+\newpage
+
+## Sample of cleaned data
+```{r}
+#| label: tbl-cleaned
+#| tbl-cap: Sample of the Cleaned Data
+#| warning: false
+#| echo: false
+
+head(analysis_data, 5) |>
+  kable(
+    col.names = c("age", "vote_liberal", "vote_conservative", "vote_NDP","gender","education_level","family_income","province","children_number"),
+    booktabs = TRUE
+  )%>%
+  kable_styling(latex_options = c("scale_down")) 
+
+```
+
+
+## Survey data summary
+
+### The Population Structure in sociodemographic characteristics
+```{r, fig.width=10, fig.height=6}
+#| echo: false
+#| eval: true
+#| label: fig-percent
+#| fig-cap: Population Percentage of different groups in a category
+#| warning: false
+
+# Set a copy of analysis data, in order to shorten categories' names
+analysis_data_2 <- analysis_data
+labels_province <- c("Ontario" = "ON", "Quebec" = "QC", "British Columbia" = "BC", "Alberta" = "AB",
+                     "Manitoba" = "MB", "New Brunswick" = "NB", "Newfoundland and Labrador" = "NL",
+                     "Nova Scotia" = "NS", "Prince Edward Island" = "PE", "Saskatchewan" = "SK")
+
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(province = recode(province, !!!labels_province))
+
+
+labels_income <- c("Less than $25,000" = "<25k", "$25,000 to $49,999"= "25~50k","$50,000 to $74,999" = "50~75k","$75,000 to $99,999" = "75~100k","$100,000 to $124,999" = "100~125k","$125,000 and more" = ">125k")
+
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(family_income = recode(family_income, !!!labels_income))
+
+labels_education <- c(
+  "Less than high school" = "Below HS",
+  "High school" = "HS Grad",
+  "Non-University" = "Non-Uni",
+  "University certificate below the bachelor" = "Uni Cert",
+  "Bachelor's degree" = "Bachelor",
+  "Above the bachelor" = "Post-Bach"
+)
+
+analysis_data_2 <- analysis_data_2 %>%
+  mutate(education_level = recode(education_level, !!!labels_education))
+
+
+# Define a function to calculate percentages for each category within a variable
+calculate_percentage <- function(data, category) {
+  data %>%
+    count(!!sym(category)) %>%
+    mutate(percentage = n / sum(n) * 100) %>%
+    rename(Category = !!sym(category)) %>%
+    mutate(Variable = category)  # store the variable name
+}
+
+# Apply the function to each of the variables
+# calculate each category's percentage it took in each group
+
+category_list = c("age", "gender", "family_income", "education_level", "province", "children_number")
+percentages <- lapply(category_list, calculate_percentage, data = analysis_data_2)
+
+# Combine the list of data frames into one data frame
+percentages_df <- bind_rows(percentages)
+
+income_levels_order <- c("<25k","25~50k","50~75k","75~100k","100~125k",">125k")
+percentages_df <- percentages_df %>%
+  mutate(Category = if_else(Variable == "family_income", factor(Category, levels = income_levels_order), as.factor(Category)))
+
+educ_levels_order <- c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach")
+percentages_df <- percentages_df %>%
+  mutate(Category = if_else(Variable == "education_level", factor(Category, levels = educ_levels_order), as.factor(Category)))
+
+# Generate the plot
+combined_plot <- ggplot(percentages_df, aes(x = Category, y = percentage, fill = Variable)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~Variable, scales = "free_x") + # allows each facet to have its own x axis
+  labs( y = "Percentage of Total") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
+  scale_fill_brewer(palette = "Set1")
+
+# Print the combined plot
+combined_plot
+
+```
+@fig-percent shows the proportion of the population within each subcategory to the population
+of the entire category after categorizing all voters according to six different demographic categories.
+It reveals that the most populous age segment is 60 to 74 years, comprising roughly
+30% of the sample. The 30-44 and 45-59 age groups each make up about 22% of the electorate,
+forming the backbone of the voters. The number of elderly voters aged 75 and above is the
+smallest. Family structures show that 40% of the cohort is childless, which includes unmarried
+individuals, with two-child families being the second most common at 30%.Voters with four
+or more children represent the lowest percentage of the electorate, with their combined share
+possibly only around 5%. Educationally, bachelor’s degrees prevail as the highest attainment
+for approximately 20% of people, closely followed by high school graduates and non-university
+educated individuals. Income distribution is fairly even across the spectrum, yet there’s a
+discernible cluster of earners between $50k to $75k and above $125k, each group accounting
+for 20% of the population. The gender mix leans slightly towards women, who exceed 50%,
+with men forming just over 40%. Geographically, half of the voters are centralized in Ontario,
+signifying a voter concentration in that province.
+
+
+### The vote rate for three main parties
+```{r, fig.width=10, fig.height=6}
+#| echo: false
+#| eval: true
+#| label: fig-vote-percent
+#| fig-cap: Percentage of Voting for 3 parties in different groups
+#| warning: false
+survey_long <- analysis_data_2 %>%
+  pivot_longer(cols = starts_with("vote_"), 
+               names_to = "party", 
+               values_to = "vote") %>%
+  pivot_longer(cols = c("age", "gender", "family_income", "education_level", "province", "children_number"),
+               names_to = "category",
+               values_to = "group") %>%
+  group_by(category, group, party) %>%
+  summarise(vote_percent = mean(vote, na.rm = TRUE), .groups = 'drop') %>%
+  ungroup()
+
+
+survey_long <- survey_long %>%
+  mutate(group = case_when(
+    category == "family_income" & group %in% c("<25k","25~50k","50~75k","75~100k","100~125k",">125k") ~ factor(group, levels = c("<25k","25~50k","50~75k","75~100k","100~125k",">125k")),
+    category == "education_level" & group %in% c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach") ~ factor(group, levels = c("Below HS","HS Grad", "Non-Uni","Uni Cert","Bachelor","Post-Bach")),
+    TRUE ~ as.factor(group)
+  ))
+
+ggplot(survey_long, aes(x = group, y = vote_percent, color = party, group = party)) +
+  geom_line() + 
+  geom_point() + 
+  scale_color_manual(values = c("vote_liberal" = "red","vote_conservative" = "grey","vote_NDP" = "lightblue")) +
+  labs(x = "Group", 
+       y = "Percentage", 
+       color = "Party") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1)) +
+  facet_wrap(~category, scales = "free_x", ncol = 2) 
+
+
+```
+@fig-vote-percent displays the probability of voters voting for three main parties (the Liberal, the Conservative
+and the NDP) within each subcategory (e.g. ‘18-29’) under six different demographic
+categories (e.g. ‘age’), after classifying all voters according to these demographic categories.
+There appears to be a positive correlation between age and the percentage of votes for the Liberal party. As voters age, support for the Liberal party appears to steadily rise from about
+50% among young people aged 18-29 to just over 50% among those over 75. However, this is
+slightly less than the support rate for the Conservative party among people aged 45 and older.
+Conversely, the NDP sees the opposite trend, with younger voters showing higher support
+rates.
+From the lowest to the highest education levels, support for the Liberal party shows a relatively
+stable trend with a slight increase. Those with a bachelor’s degree appear to be the most
+steadfast in their support for the Liberals, with a support rate above 40%.Among voters with
+education levels lower than a university certificate, the Conservative party is more popular
+than the Liberal party.
+
+Male voters show higher support for the Liberal party than females, but they also tend to favor
+the Conservative party more. Female support for the three parties is almost identical. Voters
+with one and four children show the highest support for the Liberal party, with 40% of them
+voting Liberal. Support for the Liberal party among voters with other numbers of children is
+fairly consistent, remaining around 35%. In families with multiple children, support for the
+Conservative party significantly increases, surpassing that for the Liberal party. In terms of
+income, the Liberal party has higher support among the middle-income class, with a general
+trend consistent with the Conservative party. However, support decreases in the higher income
+bracket ($100,000 to $125,000), slightly below the Conservative party.
+Ontario, the most populous province, shows a slightly higher support rate for the Liberal party
+compared to the average support in other provinces, just over 40%, and is slightly ahead of the
+other two parties. New Brunswick has the highest support rate for the Liberals, with over half
+of the population voting for the Liberal party. Saskatchewan shows the least support for the
+Liberals, with only about 20% of the vote. In contrast, the vote shares for the Conservative and
+Liberal parties in these two provinces are clearly polarized and significantly different. Overall,
+there is a clear preference for the three parties across different provinces, with swing regions
+being few.
+
+
+# Model {#sec-models}
+
+## Multilevel Logistic Regression Model
+
+
+$$ log(\frac{p_{ij}}{1-p_{ij}}) = \beta_{0j}+\beta_1  x_{ij\ age} + \beta_2 x_{ij\ gender} + \beta_3  x_{ij\ education\ level} + \beta_4  x_{ij\ family\ income} + \beta_5  x_{ij\ children\ number}$$
+
+$$\beta_{0j} \thicksim Normal(\mu_{\beta_{0}}, \sigma^2_{\beta_{0}})$$
+
+
+### Model justification
+In the model, $j$ is the province and $i$ is the individual voter indicator.
+
+$p$ represents the probability of the event of interest occurring,
+which is the voter's probability of voting for any specific party. $p_{ij}$
+means the voting of any specific party probability of ith voter in jth
+province.\
+
+Log Odds: The formula $log(\frac{p_{ij}}{1-p_{ij}})$ calculates the log odds of a voter choosing a specific party, effectively quantifying how likely they are to vote for the party versus not voting for it.\
+
+Intercept ($\beta_0$ and $\beta_{0j}$): The intercept, $\beta_0$, is the baseline log odds of voting for the party across all voters, assuming average conditions for all explanatory variables (age, gender, etc.).\ $\beta_{0j}$ adjusts this intercept for each province, capturing local variations and assuming these effects are normally distributed.\
+
+Slopes ($\beta_1, \beta_2, \beta_3, \beta_4, \beta_5$):
+
+$\beta_1$: Change in log odds of voting for the party with each additional year of a voter’s age.\
+$\beta_2$: Difference in log odds between male and female voters, adjusting for other factors.\
+$\beta_3$: Difference in log odds among education levels, controlling for other variables.\
+$\beta_4$: Difference in log odds among various family income levels.\
+$\beta_5$: Difference in log odds based on the number of children in the family.\
+
+Variables ($x_{ij}$): Represents categorical predictors such as age, gender, education, income, and number of children for voter $i$ in province $j$, where each variable is coded as 0 or 1.\
+
+
+
+
+# Results {#sec-result}
+
+```{r}
+#| label: models
+#| warning: false
+#| message: false
+#| echo: false
+
+liberal_model <- readRDS("../models/liberal_model.rds")
+```
+
+## Model Coefficients
+
+```{r}
+#| label: tbl-liberal
+#| tbl-cap: Summary Statistics of the Coefficients of the Linear Model
+#| warning: false
+#| echo: false
+modelsummary(liberal_model, output = "kableExtra")
+
+```
+
+@tbl-liberal provides key coefficients to understand the relationship between variables and possibility of voting for the Liberal Party:
+
+- **Intercept**: The model's intercept is estimated at approximately -1.871. indicating the log odds of voting for the Liberal Party when all other explanatory variables are at their reference levels, and the random effect of province is at its average level. A negative intercept suggests that without any other influences, the likelihood of not voting for the Liberal Party is higher than voting for it.
+- **age groups**: The increasing coefficients indicates that, compared to the reference age group (usually the youngest group), the odds of voting for the Liberal Party increase with age.
+- **gender**: The coefficient for Male is -0.030, suggesting a slightly lower likelihood for males to support the Liberal Party compared to females, assuming females are the reference category.
+- **education levels**: The coefficients imply that individuals with higher educational qualifications, particularly those with a bachelor's degree (0.702) or higher (0.734), are more likely to vote for the Liberal Party compared to those without a high school diploma.
+- **family income**: Higher-income families being more likely to vote for the Liberal party.
+- **number of children**: The coefficients for number of children are negative, except for children_number1, meaning that households with children are less likely to vote for the Democratic Party compared to those without children.
+- **random effect for province**: (Sigma[province × (Intercept),(Intercept)]) is valued at 0.186, indicating variability among intercepts across provinces, reflecting differences in voting behaviors among provinces.
+- **Other statistical measures**: the number of observations (Num.Obs.) at 3310, the R² value at 0.060, and the Marginal R² (R² Marg.) at 0.042, suggesting that the model explains a modest amount of the variability overall. The model's log-likelihood (Log.Lik.) is -2066.231, which describes the probability of the model fitting the data. ELPD and LOOIC are criteria used for model selection and comparison, while the Root Mean Square Error (RMSE) is a measure of the model's predictive accuracy with a value of 0.47, where lower values indicate more accurate predictions.
+
+```{r}
+#| label: tbl-liberal-3
+#| tbl-cap: Coefficients of Liberal Party Model In Different Province
+#| warning: false
+#| echo: false
+#Coefficient table of model_liberal
+a = coef(liberal_model)
+b <- a$province 
+b%>%
+select(c(1:1))%>%
+kable()
+
+```
+@tbl-liberal-3 shows the intercept for each province. The coefficients align with the trend illustrated in @fig-vote-percent.
+
+
+```{r}
+#| label: fig-liberal
+#| tbl-cap: Coefficients of social factors influence vote for liberal party
+#| warning: false
+#| echo: false
+
+modelplot(liberal_model, conf_level = 0.9) +
+  labs(x = "90 per cent credibility interval")
+
+```
+@fig-liberal is a statistical model's coefficient estimate graph, which demonstrates the impact of different variables on the probability of voting for the Liberal Party. Each row represents the coefficient of a variable in the model, with the point estimate of the coefficient represented by a solid black dot and its 90% credibility intervals (Credibility Intervals) represented by black lines. The point estimate of the coefficient (black dot) indicates the trend of the response variable (here, the probability of voting for the Liberal Party) when that variable increases by one unit. If the black dot is to the right of the zero line, it suggests that an increase in this variable may increase the probability of voting for the Liberal Party; if it is to the left, it may decrease the probability.
+
+The width of the 90% credibility intervals (horizontal lines) reflects the uncertainty of the estimate. If the interval is narrow, it suggests a higher certainty about the impact of this variable. If the interval is wide, it suggests a greater uncertainty in the estimate. If the 90% credibility interval does not contain zero, then we can consider that at the 90% confidence level, the variable has a significant impact on voting behavior. If the interval includes zero, we cannot confirm its impact at this level.
+
+For instance, the credibility interval for 'genderMale' is quite narrow and does not contain zero. This suggests that the effect of being male on the probability of voting for the Liberal Party is estimated with higher certainty and is statistically significant at the 90% confidence level. The fact that the interval does not include zero implies that there is a discernible impact of gender on voting behavior. For Family Income (50,000 to 74,999), its interval is wider, suggesting that there's more uncertainty regarding the impact of this income level on the probability of voting for the Liberal Party. However, since the interval does not include zero, it suggests that there is likely a significant impact, but the exact magnitude of this effect is less certain.
+
+
+
+
+# Discussion {#sec-dis}
+
+
+## What is done in this paper? {#sec-first-point}
+In the paper, researchers conducted an in-depth analysis of Canadian voter behavior using a multilevel logistic regression model, specifically focusing on voters of the Liberal Party. They utilized data from the 2021 Canadian Election Study (CES), examining how factors such as age, education level, family income, gender, and the number of children influence voting support for the Liberal Party. Provinces were included as random effects variables in the model to account for political variations across regions.(exclude regions like Quebec, Yukon, Northwest Territories, and Nunavut due to their unique electoral dynamics.)
+
+
+## What we learn about the world?
+Through this study, we have gained a nuanced understanding of the factors that influence voter support for the Liberal Party in Canada. As individuals age, their likelihood to support the Liberal Party increases, a trend particularly noticeable among older voters who have traditionally been Conservative supporters. This shift could be attributed to the Liberal Party's efforts in addressing issues pertinent to senior citizens, possibly influenced by recent events such as the COVID-19 vaccination rollout, where a significant percentage of senior Canadians have been vaccinated. The implication here is that policies that directly impact the well-being and concerns of older adults can be a powerful determinant of their voting preferences.
+
+Furthermore, analysis of voting intentions suggests that gender plays a significant role among younger voters, where we see distinct patterns such as young men favoring the Conservative Party and young women showing stronger support for the NDP. Yet, for the Liberal Party, the support appears to be consistent across different segments, irrespective of age or gender. This consistency suggests that the Liberal Party's policies may have broad appeal across different demographics or that the party's stance on various issues is not polarizing enough to create a noticeable gender gap within its supporters.
+
+Educational attainment is another influential factor, with those holding higher education levels likely resonating with the Liberal Party's emphasis on education, environmental protection, and technological innovation. These voters may view the Liberal Party as more aligned with their values and interests, particularly in policy areas that affect long-term societal progress.
+
+Given these insights, it would be beneficial for policymakers and the Liberal Party to focus on developing and communicating policies that address the specific needs and concerns of these key voter groups. For the older demographic, continuing to provide and expand on healthcare, retirement insurance, and health protection will likely be vital. For the highly educated demographic, emphasizing the Liberal Party's commitment to advancing education and innovation could solidify support. Additionally, understanding the salient issues for different age and gender groups can help tailor communication and policy initiatives more effectively.
+
+These observations are crucial for the Liberal Party if they are to maintain and strengthen their voter base, especially considering the evolving dynamics within the Canadian electorate.
+
+
+## Weaknesses and next steps
+
+Although the model is sufficiently convergence in diagnostics section, the report relies on the assumption of complete trust in the authenticity of the data used; if responses are recorded in the survey or census showing fake information, it is impossible to eliminate the error caused by that misinformation. Meanwhile, accurate census data depicting the age distribution in the predicted year is essential. The percentage of different ages and the preference for different parties may vary throughout the years, leading to potential inaccuracies in our prediction. The exclusion of Quebec, Yukon, Northwest Territories, and Nunavut from our province variable, either due to distinct political parties within the province (Quebec) or missing data in our sources (Yukon et al.), limits the generalizability of our predictions of these regions. Furthermore, there are different economic conditions between the year of data collected and the year of the prediction. The variation of the economic situation could affect the outcomes of the winning party. 
+
+In addition, the relatively limited explanatory power of our model (R² value of 0.060) suggests that there are other factors that are not captured by the model that may be influencing voters' voting behavior. Future research could explore additional variables such as cultural orientation, social identity, and recent political events, all of which may have a significant impact on voter behavior.
+
+Looking forward, analyzing the voting results within Quebec, Yukon, Northwest Territories, and Nunavut satisfies their unique provincial characteristic result better.
+
+\newpage
+
+\appendix
+
+# Appendix {#sec-A}
+
+## Posterior predictive check {#sec-posterior}
+
+```{r fig-posterior-plot, echo=FALSE, fig.cap="pp check"}
+
+pp_check(liberal_model) + 
+  theme_classic() +
+  theme(legend.position = "bottom")
+```
+
+In @fig-posterior-plot, we implement a posterior predictive check. This shows the simulated data from the posterior distribution (illustrated by the lighter lines) aligns closely with the distribution of the observed data (indicated by the solid line). The lighter lines, which represent the uncertainty in our predictions, nearly converge with the solid line. This convergence suggests that our model accurately fits the observed data, indicating that the selected priors and model structure effectively capture the variations in voting for the Liberal Party among interviewees.
+
+## Diagnostics
+
+```{r, fig.width=10, fig.height=5}
+#| echo: false
+#| eval: true
+#| message: false
+#| warning: false
+#| label: fig-rhat
+#| fig-cap: "Checking the convergence of the MCMC algorithm"
+plot(liberal_model, "rhat")
+```
+
+In @fig-rhat, the distribution of R-hat values is displayed, which is used in Bayesian statistics to assess convergence. Different R̂ values are represented by circles of different colors. Blue circles represent R̂ values that do not exceed 1.05, which is typically considered an acceptable level of convergence; light blue circles indicate R̂ values between 1.05 and 1.1, which may suggest the need for more samples or further investigation; and dark blue circles represent R̂ values greater than 1.1, which usually indicates insufficient convergence, requiring longer chains, more samples, or model improvements. This result suggests that there are no convergence issues in this particular Bayesian model estimation. All points are tightly concentrated around the standard line of 1.00, which is a very positive sign.
+
+\newpage
+
+
+# References {#sec-ref}
+
+
