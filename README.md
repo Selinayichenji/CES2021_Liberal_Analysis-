@@ -1,4 +1,4 @@
-# Canadian_election_prediction
+# CCES2021_Liberal_Analysis
 
 # Description
 This GitHub Repository contains all files used to generate the paper *Analyzing how sociodemographic characteristics influence voting for the Liberal Party of Canada*.
